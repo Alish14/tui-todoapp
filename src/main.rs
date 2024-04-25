@@ -7,7 +7,7 @@ use crossterm::{
 use std::{error::Error, io};
 use tui::{
     backend::{Backend, CrosstermBackend},
-    layout::{self, Constraint, Direction, Layout},
+    layout::{self, Constraint, Direction, Layout,Alignment},
     style::{Color, Modifier, Style},
     text::{Span, Spans},
     widgets::{Block, Borders, Tabs,Paragraph},
@@ -87,19 +87,41 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App){
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .margin(5)
-        .constraints([Constraint::Length(3), Constraint::Min(0)].as_ref())
+        .constraints([         
+        Constraint::Percentage(5),
+        Constraint::Percentage(100),].as_ref())
         .split(size);
+    let chunks_top=layout::Layout::default()
+    .direction(Direction::Vertical)
+    .constraints(
+        [
+            Constraint::Percentage(10),
+            Constraint::Percentage(80),
+            Constraint::Percentage(10),
+        ]
+        .as_ref(),
+    )
+    .split(chunks[1]);
+let chunks_down = Layout::default()
+.direction(Direction::Vertical)
+.margin(5)
+.constraints([Constraint::Length(3), Constraint::Min(1)].as_ref())
+.split(chunks[1]);
 
     let block = Block::default().style(Style::default().bg(Color::Rgb((255), (192), (203))).fg(Color::Black));
     f.render_widget(block, size);
     let text = vec![
-    Spans::from(vec![
-        Span::raw("First"),
-        Span::styled("line",Style::default().add_modifier(Modifier::ITALIC)),
-        Span::raw("."),
-    ])];
-    
+        Spans::from(Span::styled(
+            "enter q for quit and use arrow key for change tabs",
+            Style::default().fg(Color::Red),
+        )),
+    ];
 
+   
+
+    let paragraph = Paragraph::new(text.clone())
+    .alignment(Alignment::Center);
+f.render_widget(paragraph, chunks_top[0]);
 
 
 
@@ -123,9 +145,9 @@ let tabs = Tabs::new(titles)
             .add_modifier(Modifier::BOLD)
             .bg(Color::Black),
     );
-f.render_widget(tabs, chunks[0]);
+f.render_widget(tabs, chunks_down[0]);
 let block = Block::default().title(app.titles[app.index]).borders(Borders::ALL);
-f.render_widget(block, chunks[1]);
+f.render_widget(block, chunks_down[1]);
 let chunks=layout::Layout::default()
     .direction(Direction::Horizontal)
     .constraints(
@@ -136,13 +158,13 @@ let chunks=layout::Layout::default()
         ]
         .as_ref(),
     )
-    .split(chunks[1]);
+    .split(chunks_down[1]);
 // let block = Block::default().title("Tasks").borders(Borders::ALL);
 // f.render_widget(block, chunk[0]);
 
-let block = Block::default().title("doing").borders(Borders::ALL);
-f.render_widget(block, chunks[1]);
 let block = Block::default().title("done").borders(Borders::ALL);
+f.render_widget(block, chunks[1]);
+let block = Block::default().title("doing").borders(Borders::ALL);
 f.render_widget(block, chunks[0]);
 
 
