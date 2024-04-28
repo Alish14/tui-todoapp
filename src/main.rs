@@ -84,7 +84,9 @@ impl<T> StatefulList<T> {
         self.state.select(Some(i));
     }
     fn task_done(&mut self,other: &mut StatefulListDone<T>){
-        other.items_done_arr.push(self.items.remove(self.state.selected().unwrap()));
+            other.items_done_arr.push(self.items.remove(self.state.selected().unwrap()));
+
+       
         let i: usize = match self.state.selected(){
             Some(i) => {
                 if i >= self.items.len() - 1 {
@@ -120,46 +122,22 @@ impl<T> StatefulList<T> {
 struct App<'a> {
     pub titles: Vec<&'a str>,
     pub index: usize,
-    items: StatefulList<(&'a str, usize)>,
-    items_done: StatefulListDone<(&'a str, usize)>,
+    items: StatefulList<(&'a str)>,
+    items_done: StatefulListDone<(&'a str)>,
     input_mode: InputMode,
     input: String,
-    messages: String,
+    messages: Vec<String>,
 }
 impl<'a> App<'a> {
     fn new() -> App<'a> {
         App {
             titles: vec!["day1", "day2", "day3", "day4","day5","day6","day7"],
             index: 0,
-            messages: String::new(),
+            messages: Vec::new(),
             input: String::new(),
             input_mode: InputMode::Normal,
             items: StatefulList::with_items(vec![
-                ("Task1", 1),
-                ("Task2", 2),
-                ("Task3", 1),
-                ("Task4", 3),
-                ("Task5", 1),
-                ("Task6", 4),
-                ("Task7", 1),
-                ("Item7", 3),
-                ("Item8", 1),
-                ("Item9", 6),
-                ("Item10", 1),
-                ("Item11", 3),
-                ("Item12", 1),
-                ("Item13", 2),
-                ("Item14", 1),
-                ("Item15", 1),
-                ("Item16", 4),
-                ("Item17", 1),
-                ("Item18", 5),
-                ("Item19", 4),
-                ("Item20", 1),
-                ("Item21", 2),
-                ("Item22", 1),
-                ("Item23", 3),
-                ("Item24", 1),
+                "task1","task2","task3"
             ]),
             items_done: StatefulListDone::with_items(vec![]),
         }
@@ -238,9 +216,7 @@ fn run_app<B: Backend>(
                     InputMode::Editing => match key.code {
                         KeyCode::Esc => app.input_mode = InputMode::Normal,
                         KeyCode::Enter => {
-                            app.messages = app.input.clone();
-                            app.input.clear();
-                            app.input_mode = InputMode::Normal;
+                            app.messages.push(app.input.drain(..).collect());
                         }
                         KeyCode::Backspace => {
                             app.input.pop();
@@ -262,27 +238,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         .margin(5)
         .constraints([Constraint::Percentage(20), Constraint::Percentage(80)].as_ref())
         .split(size);
-
-    let text = vec![
-        Spans::from(Span::styled(
-            "enter q for quit and use arrow key for change tabs",
-            Style::default().fg(Color::Red),
-        )),
-    ];
-    let paragraph = Paragraph::new(text.clone()).alignment(Alignment::Center);
-    // f.render_widget(paragraph, chunks[1]);
-
-    let block = Block::default()
-        .style(Style::default().bg(Color::Rgb(255, 192, 203)).fg(Color::Black));
-    f.render_widget(block, chunks[0]);
-
-    let chunks_down = Layout::default()
-        .direction(Direction::Vertical)
-        .margin(5)
-        .constraints([Constraint::Length(3), Constraint::Min(1)].as_ref())
-        .split(chunks[1]);
-
-
+    
     let block = Block::default().style(Style::default().bg(Color::Rgb((255), (192), (203))).fg(Color::Black));
     f.render_widget(block, size);
     let text = vec![
@@ -290,9 +246,18 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
             "enter q for quit and use arrow key for change tabs",
             Style::default().fg(Color::Red),
         )),
-    ];
-
-    let titles = app
+        ];
+        
+        let chunks_down = Layout::default()
+        .direction(Direction::Vertical)
+        .margin(5)
+        .constraints([Constraint::Percentage(20), Constraint::Percentage(120)].as_ref())
+        .split(chunks[1]);
+        
+        let block = Block::default()
+        .style(Style::default().bg(Color::Rgb(255, 192, 203)).fg(Color::Black));
+        f.render_widget(block, chunks[0]);
+        let titles = app
     .titles
     .iter()
     .map(|t| {
@@ -356,13 +321,12 @@ let chunks_list=layout::Layout::default()
         .items_done_arr
         .iter()
         .map(|i| {
-            let mut lines = vec![Spans::from(i.0)];
-            for _ in 0..i.1 {
+            let mut lines: Vec<Spans<'_>> = vec![Spans::from()];
                 lines.push(Spans::from(Span::styled(
-                    "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+                    app.messages.clone(),
                     Style::default().add_modifier(Modifier::ITALIC),
                 )));
-            }
+            
             ListItem::new(lines).style(Style::default().fg(Color::Black))
         })
         .collect();
@@ -380,13 +344,12 @@ let chunks_list=layout::Layout::default()
         .items
         .iter()
         .map(|i| {
-            let mut lines = vec![Spans::from(i.0)];
-            for _ in 0..i.1 {
-                lines.push(Spans::from(Span::styled(
-                    "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
-                    Style::default().add_modifier(Modifier::ITALIC),
-                )));
-            }
+            let mut lines = vec![Spans::from(*i.to_string())];
+                // lines.push(Spans::from(Span::styled(
+                //     "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+                //     Style::default().add_modifier(Modifier::ITALIC),
+                // )));
+            
             ListItem::new(lines).style(Style::default().fg(Color::Black))
         })
         .collect();
@@ -407,7 +370,6 @@ f.render_widget(input, chunks[0]);
 //             chunks[1].y + 1,
 //         )
 //     }
-
     let items = List::new(items)
     .block(Block::default().borders(Borders::ALL).title("List"))
     .highlight_style(
