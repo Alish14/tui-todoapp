@@ -8,10 +8,58 @@ use std::{error::Error, io};
 use tui::{
     backend::{Backend, CrosstermBackend}, layout::{self, Alignment, Constraint, Direction, Layout}, style::{Color, Modifier, Style}, symbols::line, text::{Span, Spans, Text}, widgets::{Block, Borders, List, ListItem, Paragraph, Tabs,ListState}, Frame, Terminal
 };
+enum InputMode {
+    Normal,
+    Editing,
+}
 
 struct StatefulList<T> {
     state: ListState,
     items: Vec<T>,
+}
+struct StatefulListDone<T> {
+    state: ListState,
+    items_done_arr: Vec<T>,
+}
+impl <T>StatefulListDone<T>{
+    fn with_items(items: Vec<T>) -> StatefulListDone<T> {
+        StatefulListDone {
+            state: ListState::default(),
+            items_done_arr:items,
+        }
+    }
+    fn next(&mut self) {
+        let i = match self.state.selected() {
+            Some(i) => {
+                if i >= self.items_done_arr.len() - 1 {
+                    0
+                } else {
+                    i + 1
+                }
+            }
+            None => 0,
+        };
+        self.state.select(Some(i));
+    }
+    fn previous(&mut self) {
+        let i = match self.state.selected() {
+            Some(i) => {
+                if i == 0 {
+                    self.items_done_arr.len() - 1
+                } else {
+                    i - 1
+                }
+            }
+            None => 0,
+        };
+        self.state.select(Some(i));
+    }
+    fn add_task(&mut self,task: T){
+        self.items_done_arr.push(task);
+    }
+    fn unselect(&mut self) {
+        self.state.select(None);
+    }
 }
 
 impl<T> StatefulList<T> {
@@ -24,6 +72,20 @@ impl<T> StatefulList<T> {
 
     fn next(&mut self) {
         let i = match self.state.selected() {
+            Some(i) => {
+                if i >= self.items.len() - 1 {
+                    0
+                } else {
+                    i + 1
+                }
+            }
+            None => 0,
+        };
+        self.state.select(Some(i));
+    }
+    fn task_done(&mut self,other: &mut StatefulListDone<T>){
+        other.items_done_arr.push(self.items.remove(self.state.selected().unwrap()));
+        let i: usize = match self.state.selected(){
             Some(i) => {
                 if i >= self.items.len() - 1 {
                     0
@@ -58,22 +120,28 @@ impl<T> StatefulList<T> {
 struct App<'a> {
     pub titles: Vec<&'a str>,
     pub index: usize,
-    items: StatefulList<(&'a str, usize)>
+    items: StatefulList<(&'a str, usize)>,
+    items_done: StatefulListDone<(&'a str, usize)>,
+    input_mode: InputMode,
+    input: String,
+    messages: String,
 }
-
 impl<'a> App<'a> {
     fn new() -> App<'a> {
         App {
             titles: vec!["day1", "day2", "day3", "day4","day5","day6","day7"],
             index: 0,
+            messages: String::new(),
+            input: String::new(),
+            input_mode: InputMode::Normal,
             items: StatefulList::with_items(vec![
-                ("Item0", 1),
-                ("Item1", 2),
-                ("Item2", 1),
-                ("Item3", 3),
-                ("Item4", 1),
-                ("Item5", 4),
-                ("Item6", 1),
+                ("Task1", 1),
+                ("Task2", 2),
+                ("Task3", 1),
+                ("Task4", 3),
+                ("Task5", 1),
+                ("Task6", 4),
+                ("Task7", 1),
                 ("Item7", 3),
                 ("Item8", 1),
                 ("Item9", 6),
@@ -93,6 +161,7 @@ impl<'a> App<'a> {
                 ("Item23", 3),
                 ("Item24", 1),
             ]),
+            items_done: StatefulListDone::with_items(vec![]),
         }
     }
 
@@ -139,6 +208,7 @@ fn main() -> Result<(), io::Error> {
 }
 
 
+
 fn run_app<B: Backend>(
     terminal: &mut Terminal<B>,
     mut app: App,
@@ -153,14 +223,33 @@ fn run_app<B: Backend>(
             .unwrap_or_else(|| Duration::from_secs(0));
         if crossterm::event::poll(timeout)? {
             if let Event::Key(key) = event::read()? {
-                match key.code {
-                    KeyCode::Char('q') => return Ok(()),
-                    KeyCode::Char('s') => app.items.unselect(),
-                    KeyCode::Down => app.items.next(),
-                    KeyCode::Right => app.next(),
-                    KeyCode::Left => app.previous(),
-                    KeyCode::Up => app.items.previous(),
-                    _ => {}
+                match app.input_mode {
+                    InputMode::Normal => match key.code {
+                        KeyCode::Char('q') => return Ok(()),
+                        KeyCode::Char('e') => app.input_mode = InputMode::Editing,
+                        KeyCode::Down => app.items.next(),
+                        KeyCode::Right => app.next(),
+                        KeyCode::Left => app.previous(),
+                        KeyCode::Up => app.items.previous(),
+                        KeyCode::Char('s') => app.items.unselect(),
+                        KeyCode::Enter => app.items.task_done(&mut app.items_done),
+                        _ => {}
+                    },
+                    InputMode::Editing => match key.code {
+                        KeyCode::Esc => app.input_mode = InputMode::Normal,
+                        KeyCode::Enter => {
+                            app.messages = app.input.clone();
+                            app.input.clear();
+                            app.input_mode = InputMode::Normal;
+                        }
+                        KeyCode::Backspace => {
+                            app.input.pop();
+                        }
+                        KeyCode::Char(c) => {
+                            app.input.push(c);
+                        }
+                        _ => {}
+                    },
                 }
             }
         }
@@ -181,7 +270,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         )),
     ];
     let paragraph = Paragraph::new(text.clone()).alignment(Alignment::Center);
-    f.render_widget(paragraph, chunks[1]);
+    // f.render_widget(paragraph, chunks[1]);
 
     let block = Block::default()
         .style(Style::default().bg(Color::Rgb(255, 192, 203)).fg(Color::Black));
@@ -223,6 +312,32 @@ let tabs = Tabs::new(titles)
             .add_modifier(Modifier::BOLD)
             .bg(Color::Black),
     );
+    let (msg, style) = match app.input_mode {
+        InputMode::Normal => (
+            vec![
+                Span::raw("Press "),
+                Span::styled("q", Style::default().add_modifier(Modifier::BOLD)),
+                Span::raw(" to exit, "),
+                Span::styled("e", Style::default().add_modifier(Modifier::BOLD)),
+                Span::raw(" to start editing."),
+            ],
+            Style::default().add_modifier(Modifier::RAPID_BLINK),
+        ),
+        InputMode::Editing => (
+            vec![
+                Span::raw("Press "),
+                Span::styled("Esc", Style::default().add_modifier(Modifier::BOLD)),
+                Span::raw(" to stop editing, "),
+                Span::styled("Enter", Style::default().add_modifier(Modifier::BOLD)),
+                Span::raw(" to record the message"),
+            ],
+            Style::default(),
+        ),
+    };
+let mut text = Text::from(Spans::from(msg));
+text.patch_style(style);
+let help_message = Paragraph::new(text).alignment(Alignment::Center);
+f.render_widget(help_message, chunks[1]);
 f.render_widget(tabs, chunks_down[0]);
 let block = Block::default().title(app.titles[app.index]).borders(Borders::ALL);
 f.render_widget(block, chunks_down[1]);
@@ -236,8 +351,32 @@ let chunks_list=layout::Layout::default()
     )
     .split(chunks_down[1]);
 
+    let item_done: Vec<ListItem> = app
+        .items_done
+        .items_done_arr
+        .iter()
+        .map(|i| {
+            let mut lines = vec![Spans::from(i.0)];
+            for _ in 0..i.1 {
+                lines.push(Spans::from(Span::styled(
+                    "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+                    Style::default().add_modifier(Modifier::ITALIC),
+                )));
+            }
+            ListItem::new(lines).style(Style::default().fg(Color::Black))
+        })
+        .collect();
+    let items_done = List::new(item_done)
+    .block(Block::default().borders(Borders::ALL).title("Done"))
+    .highlight_style(
+        Style::default()
+        .bg(Color::LightGreen)
+        .add_modifier(Modifier::BOLD),
+
+    )
+    .highlight_symbol(">> ");
     let items: Vec<ListItem> = app
-        .items
+    .items
         .items
         .iter()
         .map(|i| {
@@ -248,32 +387,50 @@ let chunks_list=layout::Layout::default()
                     Style::default().add_modifier(Modifier::ITALIC),
                 )));
             }
-            ListItem::new(lines).style(Style::default().fg(Color::Black).bg(Color::White))
+            ListItem::new(lines).style(Style::default().fg(Color::Black))
         })
         .collect();
+    let input = Paragraph::new(app.input.as_ref())
+    .style(match app.input_mode {
+        InputMode::Normal => Style::default(),
+        InputMode::Editing => Style::default().fg(Color::Yellow),
+    })
+    .block(Block::default().borders(Borders::ALL).title("Input"));
+f.render_widget(input, chunks[0]);
+// match app.input_mode {
+//     InputMode::Normal =>
+//         {}
+
+//     InputMode::Editing => {
+//         f.set_cursor(
+//             chunks[1].x + app.input.width() as u16 + 1,e
+//             chunks[1].y + 1,
+//         )
+//     }
 
     let items = List::new(items)
     .block(Block::default().borders(Borders::ALL).title("List"))
     .highlight_style(
         Style::default()
-            .bg(Color::LightGreen)
-            .add_modifier(Modifier::BOLD),
+        .bg(Color::LightGreen)
+        .add_modifier(Modifier::BOLD),
     )
     .highlight_symbol(">> ");
-f.render_stateful_widget(items, chunks_list[0], &mut app.items.state);
 
 let message = vec![
     Spans::from(Span::styled(
         "This is simple Tui Todo app",
         Style::default().fg(Color::Green),
     )),
-];
-let paragraph = Paragraph::new(message).alignment(Alignment::Center);
-f.render_widget(paragraph, chunks[0]);
-let block = Block::default().title("done").borders(Borders::ALL);
-f.render_widget(block, chunks_list[1]);
-let block = Block::default().title("doing").borders(Borders::ALL);
-f.render_widget(block, chunks_list[0]);
+    ];
+    f.render_stateful_widget(items, chunks_list[0], &mut app.items.state);
+    let paragraph = Paragraph::new(message).alignment(Alignment::Center);
+    f.render_widget(paragraph, chunks[0]);
+    let block = Block::default().title("done").borders(Borders::ALL);
+    f.render_widget(block, chunks_list[1]);
+    let block = Block::default().title("doing").borders(Borders::ALL);
+    f.render_stateful_widget(items_done, chunks_list[1], &mut app.items_done.state);
+    f.render_widget(block, chunks_list[0]);
 
 
 
