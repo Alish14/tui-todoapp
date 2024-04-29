@@ -1,4 +1,4 @@
-use std::{ thread, time::Duration,time::Instant};
+use std::{ option, thread, time::{Duration, Instant}};
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode},
     execute,
@@ -8,6 +8,7 @@ use std::{error::Error, io};
 use tui::{
     backend::{Backend, CrosstermBackend}, layout::{self, Alignment, Constraint, Direction, Layout}, style::{Color, Modifier, Style}, symbols::line, text::{Span, Spans, Text}, widgets::{Block, Borders, List, ListItem, Paragraph, Tabs,ListState}, Frame, Terminal
 };
+#[derive(PartialEq)]
 enum InputMode {
     Normal,
     Editing,
@@ -58,7 +59,7 @@ impl <T>StatefulListDone<T>{
         self.items_done_arr.push(task);
     }
     fn unselect(&mut self) {
-        self.state.select(None);
+        self.state.select(Some(0));
     }
 }
 
@@ -71,6 +72,9 @@ impl<T> StatefulList<T> {
     }
 
     fn next(&mut self) {
+        if self.items.is_empty() {
+            return;
+        }
         let i = match self.state.selected() {
             Some(i) => {
                 if i >= self.items.len() - 1 {
@@ -83,10 +87,14 @@ impl<T> StatefulList<T> {
         };
         self.state.select(Some(i));
     }
-    fn task_done(&mut self,other: &mut StatefulListDone<T>){
-            other.items_done_arr.push(self.items.remove(self.state.selected().unwrap()));
-
-       
+    fn task_done(&mut self,other: &mut StatefulListDone<T>)->Option<T>{
+        let selected_index = self.state.selected()?;
+        if selected_index >= self.items.len() {
+            return None;
+        }
+        let removed_item = self.items.remove(selected_index);
+        self.state.select(None); // Unselect the item
+        // other.items_done_arr.push(self.items.remove(self.state.selected().unwrap()));
         let i: usize = match self.state.selected(){
             Some(i) => {
                 if i >= self.items.len() - 1 {
@@ -98,9 +106,14 @@ impl<T> StatefulList<T> {
             None => 0,
         };
         self.state.select(Some(i));
+        Some(removed_item)
+
     }
 
-    fn previous(&mut self) {
+    fn previous(&mut self) {    
+        if self.items.is_empty() {
+            return;
+        }
         let i = match self.state.selected() {
             Some(i) => {
                 if i == 0 {
@@ -122,8 +135,8 @@ impl<T> StatefulList<T> {
 struct App<'a> {
     pub titles: Vec<&'a str>,
     pub index: usize,
-    items: StatefulList<(&'a str)>,
-    items_done: StatefulListDone<(&'a str)>,
+    items: StatefulList<String>,
+    items_done: StatefulListDone<String>,
     input_mode: InputMode,
     input: String,
     messages: Vec<String>,
@@ -137,7 +150,6 @@ impl<'a> App<'a> {
             input: String::new(),
             input_mode: InputMode::Normal,
             items: StatefulList::with_items(vec![
-                "task1","task2","task3"
             ]),
             items_done: StatefulListDone::with_items(vec![]),
         }
@@ -147,7 +159,9 @@ impl<'a> App<'a> {
         self.index = (self.index + 1) % self.titles.len();
     }
 
-    pub fn previous(&mut self) {
+
+    pub fn previous(&mut self){
+    
         if self.index > 0 {
             self.index -= 1;
         } else {
@@ -210,13 +224,19 @@ fn run_app<B: Backend>(
                         KeyCode::Left => app.previous(),
                         KeyCode::Up => app.items.previous(),
                         KeyCode::Char('s') => app.items.unselect(),
-                        KeyCode::Enter => app.items.task_done(&mut app.items_done),
+                        KeyCode::Tab=> {
+                            app.items_done.unselect(); 
+                            app.items.unselect(); 
+                        },
+                        KeyCode::Enter => if let Some(task) = app.items.task_done(&mut app.items_done) {
+                            app.items_done.items_done_arr.push(task);
+                        },
                         _ => {}
                     },
                     InputMode::Editing => match key.code {
                         KeyCode::Esc => app.input_mode = InputMode::Normal,
                         KeyCode::Enter => {
-                            app.messages.push(app.input.drain(..).collect());
+                            app.items.items.push(app.input.drain(..).collect());
                         }
                         KeyCode::Backspace => {
                             app.input.pop();
@@ -239,7 +259,8 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         .constraints([Constraint::Percentage(20), Constraint::Percentage(80)].as_ref())
         .split(size);
     
-    let block = Block::default().style(Style::default().bg(Color::Rgb((255), (192), (203))).fg(Color::Black));
+    // let block = Block::default().style(Style::default().bg(Color::Rgb((255, 192, 203)).fg(Color::Black)));
+    let block = Block::default().style(Style::default().bg(Color::Rgb(255, 192, 203)).fg(Color::Black));
     f.render_widget(block, size);
     let text = vec![
         Spans::from(Span::styled(
@@ -321,11 +342,7 @@ let chunks_list=layout::Layout::default()
         .items_done_arr
         .iter()
         .map(|i| {
-            let mut lines: Vec<Spans<'_>> = vec![Spans::from()];
-                lines.push(Spans::from(Span::styled(
-                    app.messages.clone(),
-                    Style::default().add_modifier(Modifier::ITALIC),
-                )));
+            let mut lines: Vec<Spans<'_>> = vec![Spans::from(i.as_str())];
             
             ListItem::new(lines).style(Style::default().fg(Color::Black))
         })
@@ -344,7 +361,7 @@ let chunks_list=layout::Layout::default()
         .items
         .iter()
         .map(|i| {
-            let mut lines = vec![Spans::from(*i.to_string())];
+            let mut lines: Vec<Spans<'_>> = vec![Spans::from(i.as_str())];
                 // lines.push(Spans::from(Span::styled(
                 //     "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
                 //     Style::default().add_modifier(Modifier::ITALIC),
@@ -359,7 +376,10 @@ let chunks_list=layout::Layout::default()
         InputMode::Editing => Style::default().fg(Color::Yellow),
     })
     .block(Block::default().borders(Borders::ALL).title("Input"));
-f.render_widget(input, chunks[0]);
+if InputMode::Editing == app.input_mode {
+    f.render_widget(input, chunks[0]);
+}
+
 // match app.input_mode {
 //     InputMode::Normal =>
 //         {}
