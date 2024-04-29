@@ -61,6 +61,15 @@ impl <T>StatefulListDone<T>{
     fn unselect(&mut self) {
         self.state.select(Some(0));
     }
+    fn delete_task(&mut self){
+        if self.items_done_arr.is_empty() {
+            return;
+        }
+        let selected_index = self.state.selected().unwrap();
+ 
+        self.items_done_arr.remove(selected_index);
+        self.state.select(None); // Unselect the item
+    }
 }
 
 impl<T> StatefulList<T> {
@@ -130,6 +139,14 @@ impl<T> StatefulList<T> {
     fn unselect(&mut self) {
         self.state.select(None);
     }
+    fn delete_task(&mut self){
+        if self.items.is_empty() {
+            return;
+        }
+        let selected_index = self.state.selected().unwrap();
+        self.items.remove(selected_index);
+        self.state.select(None); // Unselect the item
+    }
 }
 
 struct App<'a> {
@@ -171,7 +188,6 @@ impl<'a> App<'a> {
 }
 
 fn main() -> Result<(), io::Error> {
-    // setup terminal
     enable_raw_mode()?;
     let mut stdout = io::stdout();
     execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
@@ -182,9 +198,7 @@ fn main() -> Result<(), io::Error> {
     let tick_rate = Duration::from_millis(250);
     let res = run_app(&mut terminal, app,tick_rate);
 
-    // thread::sleep(Duration::from_millis(10000));
 
-    // restore terminal
     if let Err(err) = res {
         println!("{:?}", err)
     }
@@ -207,6 +221,7 @@ fn run_app<B: Backend>(
     tick_rate: Duration,
 ) -> io::Result<()> {
     let mut last_tick = Instant::now();
+    let mut is_done_list = false;
     loop {
         terminal.draw(|f| ui(f, &mut app))?;
 
@@ -218,15 +233,45 @@ fn run_app<B: Backend>(
                 match app.input_mode {
                     InputMode::Normal => match key.code {
                         KeyCode::Char('q') => return Ok(()),
+                        KeyCode::Char('D')=>{
+                            if is_done_list {
+                                app.items_done.delete_task();
+                            } else {
+                                app.items.delete_task();
+                            }
+                        }
                         KeyCode::Char('e') => app.input_mode = InputMode::Editing,
-                        KeyCode::Down => app.items.next(),
+                        KeyCode::Down => {
+                            if is_done_list {
+                                app.items_done.next();
+                            } else {
+                                app.items.next();
+                            }
+                        },
                         KeyCode::Right => app.next(),
                         KeyCode::Left => app.previous(),
-                        KeyCode::Up => app.items.previous(),
-                        KeyCode::Char('s') => app.items.unselect(),
+                        KeyCode::Up => {
+                            if is_done_list {
+                                app.items_done.previous();
+                            } else {
+                                app.items.previous();
+                            }
+                        },
+                        KeyCode::Char('s') => 
+                        {  
+                            if is_done_list {
+                            app.items_done.unselect();
+                        } else {
+                            app.items.unselect();
+                        }
+                    },
                         KeyCode::Tab=> {
-                            app.items_done.unselect(); 
-                            app.items.unselect(); 
+                            if is_done_list {
+                                app.items_done.unselect();
+                            } else {
+                                app.items.unselect();
+                            }
+                            is_done_list = !is_done_list;
                         },
                         KeyCode::Enter => if let Some(task) = app.items.task_done(&mut app.items_done) {
                             app.items_done.items_done_arr.push(task);
@@ -259,16 +304,8 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         .constraints([Constraint::Percentage(20), Constraint::Percentage(80)].as_ref())
         .split(size);
     
-    // let block = Block::default().style(Style::default().bg(Color::Rgb((255, 192, 203)).fg(Color::Black)));
     let block = Block::default().style(Style::default().bg(Color::Rgb(255, 192, 203)).fg(Color::Black));
-    f.render_widget(block, size);
-    let text = vec![
-        Spans::from(Span::styled(
-            "enter q for quit and use arrow key for change tabs",
-            Style::default().fg(Color::Red),
-        )),
-        ];
-        
+    f.render_widget(block, size);        
         let chunks_down = Layout::default()
         .direction(Direction::Vertical)
         .margin(5)
@@ -306,6 +343,9 @@ let tabs = Tabs::new(titles)
                 Span::raw(" to exit, "),
                 Span::styled("e", Style::default().add_modifier(Modifier::BOLD)),
                 Span::raw(" to start editing."),
+                Span::raw("Press "),
+                Span::styled("Tab", Style::default().add_modifier(Modifier::BOLD)),
+                Span::raw(" to switch between lists."),
             ],
             Style::default().add_modifier(Modifier::RAPID_BLINK),
         ),
@@ -362,11 +402,6 @@ let chunks_list=layout::Layout::default()
         .iter()
         .map(|i| {
             let mut lines: Vec<Spans<'_>> = vec![Spans::from(i.as_str())];
-                // lines.push(Spans::from(Span::styled(
-                //     "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
-                //     Style::default().add_modifier(Modifier::ITALIC),
-                // )));
-            
             ListItem::new(lines).style(Style::default().fg(Color::Black))
         })
         .collect();
@@ -380,16 +415,6 @@ if InputMode::Editing == app.input_mode {
     f.render_widget(input, chunks[0]);
 }
 
-// match app.input_mode {
-//     InputMode::Normal =>
-//         {}
-
-//     InputMode::Editing => {
-//         f.set_cursor(
-//             chunks[1].x + app.input.width() as u16 + 1,e
-//             chunks[1].y + 1,
-//         )
-//     }
     let items = List::new(items)
     .block(Block::default().borders(Borders::ALL).title("List"))
     .highlight_style(
