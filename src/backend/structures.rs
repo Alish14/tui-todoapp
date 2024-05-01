@@ -1,4 +1,5 @@
 use tui::widgets::ListState; 
+use std::collections::HashMap;
 
 #[derive(PartialEq)]
 pub enum InputMode {
@@ -16,6 +17,7 @@ pub struct StatefulListDone<T> {
 }
 
 pub struct App<'a> {
+    pub days_tasks: HashMap<&'a str, (StatefulList<String>,StatefulListDone<String>)>,
     pub titles: Vec<&'a str>,
     pub index: usize,
     pub items: StatefulList<String>,
@@ -101,12 +103,12 @@ impl<T> StatefulList<T> {
     }
     pub fn task_done(&mut self,other: &mut StatefulListDone<T>)->Option<T>{
         let selected_index = self.state.selected()?;
+
         if selected_index >= self.items.len() {
             return None;
         }
         let removed_item = self.items.remove(selected_index);
-        self.state.select(None); // Unselect the item
-        // other.items_done_arr.push(self.items.remove(self.state.selected().unwrap()));
+        self.state.select(None); 
         let i: usize = match self.state.selected(){
             Some(i) => {
                 if i >= self.items.len() - 1 {
@@ -155,7 +157,16 @@ impl<T> StatefulList<T> {
 
 impl<'a> App<'a> {
     pub fn new() -> App<'a> {
+        let mut days_tasks = HashMap::new();
+        days_tasks.insert("day1",(StatefulList::with_items(vec![]),StatefulListDone::with_items(vec![])));
+        days_tasks.insert("day2",(StatefulList::with_items(vec![]),StatefulListDone::with_items(vec![])));
+        days_tasks.insert("day3",(StatefulList::with_items(vec![]),StatefulListDone::with_items(vec![])));
+        days_tasks.insert("day4",(StatefulList::with_items(vec![]),StatefulListDone::with_items(vec![])));
+        days_tasks.insert("day5",(StatefulList::with_items(vec![]),StatefulListDone::with_items(vec![])));
+        days_tasks.insert("day6",(StatefulList::with_items(vec![]),StatefulListDone::with_items(vec![])));
+        days_tasks.insert("day7",(StatefulList::with_items(vec![]),StatefulListDone::with_items(vec![])));
         App {
+            days_tasks,
             titles: vec!["day1", "day2", "day3", "day4","day5","day6","day7"],
             index: 0,
             messages: Vec::new(),

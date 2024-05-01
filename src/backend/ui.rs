@@ -62,6 +62,9 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
                     Span::raw("Press "),
                     Span::styled("Tab", Style::default().add_modifier(Modifier::BOLD)),
                     Span::raw(" to switch between lists."),
+                    Span::raw("Press "),
+                    Span::styled("D", Style::default().add_modifier(Modifier::BOLD)),
+                    Span::raw(" to delete the task."),
                 ],
                 Style::default().add_modifier(Modifier::RAPID_BLINK),
             ),
@@ -92,9 +95,11 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
             .as_ref(),
         )
         .split(chunks_down[1]);
+
+let mut days_tasks_ref  = app.days_tasks.get_mut(&app.titles[app.index]).unwrap();
     
-        let item_done: Vec<ListItem> = app
-            .items_done
+        let  item_done: Vec<ListItem> = days_tasks_ref
+            .1
             .items_done_arr
             .iter()
             .map(|i| {
@@ -112,8 +117,14 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     
         )
         .highlight_symbol(">> ");
-        let items: Vec<ListItem> = app
-        .items
+        //  match  app.days_tasks.get(&app.titles[app.index]) {
+        //     Some(inner)=> println!("{}",inner.0.items.len()),
+        //     None => panic!("No such key"),
+             
+        //  };
+
+        let items: Vec<ListItem> = days_tasks_ref
+            .0
             .items
             .iter()
             .map(|i| {
@@ -121,7 +132,7 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
                 ListItem::new(lines).style(Style::default().fg(Color::Black))
             })
             .collect();
-        let input = Paragraph::new(app.input.as_ref())
+        let input: Paragraph = Paragraph::new(app.input.as_ref())
         .style(match app.input_mode {
             InputMode::Normal => Style::default(),
             InputMode::Editing => Style::default().fg(Color::Yellow),
@@ -146,13 +157,15 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
             Style::default().fg(Color::Green),
         )),
         ];
-        f.render_stateful_widget(items, chunks_list[0], &mut app.items.state);
+        let test_0 = &mut days_tasks_ref.0.state;
+        let test_1 = &mut days_tasks_ref.1.state;
+        f.render_stateful_widget(items, chunks_list[0], test_0);
         let paragraph = Paragraph::new(message).alignment(Alignment::Center);
         f.render_widget(paragraph, chunks[0]);
         let block = Block::default().title("done").borders(Borders::ALL);
         f.render_widget(block, chunks_list[1]);
         let block = Block::default().title("doing").borders(Borders::ALL);
-        f.render_stateful_widget(items_done, chunks_list[1], &mut app.items_done.state);
+        f.render_stateful_widget(items_done, chunks_list[1], test_1);
         f.render_widget(block, chunks_list[0]);
     
     
