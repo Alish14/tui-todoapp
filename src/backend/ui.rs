@@ -19,6 +19,7 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
             .margin(5)
             .constraints([Constraint::Percentage(20), Constraint::Percentage(80)].as_ref())
             .split(size);
+        app.titles=vec!["day1", "day2", "day3", "day4","day5","day6","day7"];
         
         let block = Block::default().style(Style::default().bg(Color::Rgb(255, 192, 203)).fg(Color::Black));
         f.render_widget(block, size);        

@@ -28,7 +28,12 @@ pub fn run_app<B: Backend>(
             if let Event::Key(key) = event::read()? {
                 match app.input_mode {
                     InputMode::Normal => match key.code {
-                        KeyCode::Char('q') => return Ok(()),
+                        KeyCode::Char('q') => {
+                            if let Err(err) = app.save_state( "todo_state.json") {
+                                eprintln!("Error saving state: {}", err);
+                            };
+                            
+                            return Ok(())},
                         KeyCode::Char('D')=>{
                             if is_done_list {
                                 app.days_tasks.get_mut(&app.titles[app.index]).unwrap().1.delete_task();

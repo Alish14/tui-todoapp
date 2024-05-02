@@ -1,22 +1,29 @@
-use tui::widgets::ListState; 
+use tui::{buffer, widgets::ListState}; 
 use std::collections::HashMap;
+use serde::{Serialize, Deserialize};
+use std::{fs::{File, OpenOptions}, io::{Read, Write}};
 
 #[derive(PartialEq)]
+#[derive(Debug, Serialize, Deserialize)]
 pub enum InputMode {
     Normal,
     Editing,
 }
-
+#[derive(Debug, Serialize, Deserialize)]
 pub struct StatefulList<T> {
+    #[serde(skip)]
     pub state: ListState,
     pub items: Vec<T>,
 }
+#[derive(Debug, Serialize, Deserialize)]
 pub struct StatefulListDone<T> {
+    #[serde(skip)]
     pub state: ListState,
     pub items_done_arr: Vec<T>,
 }
-
+#[derive(Debug, Serialize, Deserialize)]
 pub struct App<'a> {
+    #[serde(borrow)]
     pub days_tasks: HashMap<&'a str, (StatefulList<String>,StatefulListDone<String>)>,
     pub titles: Vec<&'a str>,
     pub index: usize,
@@ -182,7 +189,16 @@ impl<'a> App<'a> {
         self.index = (self.index + 1) % self.titles.len();
     }
 
-
+    pub fn save_state(&mut self, file_path: &str) -> std::io::Result<()> {
+        let serialized = serde_json::to_string(&self)?;
+        let mut file = File::create(file_path)?;
+        file.write_all(serialized.as_bytes())?;
+        Ok(())
+    }
+    // pub fn load_state(contents: &str) -> std::io::Result<App> {
+    //     let app = serde_json::from_str(contents)?;
+    //     Ok(app)
+    // }
     pub fn previous(&mut self){
     
         if self.index > 0 {

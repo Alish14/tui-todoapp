@@ -9,7 +9,8 @@ use std::{error::Error, io};
 use tui::{
     backend::{Backend, CrosstermBackend}, layout::{self, Alignment, Constraint, Direction, Layout}, style::{Color, Modifier, Style}, symbols::line, text::{Span, Spans, Text}, widgets::{Block, Borders, List, ListItem, Paragraph, Tabs,ListState}, Frame, Terminal
 };
-
+use serde::{Serialize, Deserialize};
+use std::{fs::{File, OpenOptions}, io::{Read, Write}};
 mod backend;
 fn main() -> Result<(), io::Error> {
     enable_raw_mode()?;
@@ -17,8 +18,20 @@ fn main() -> Result<(), io::Error> {
     execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
     let backend = CrosstermBackend::new(stdout);
     let mut terminal: Terminal<CrosstermBackend<io::Stdout>> = Terminal::new(backend)?;
+    // let file_path = "todo_state.json";
+    // let mut file = File::open(file_path)?;
+    // let mut contents = String::new();
+    // let file_path = "todo_state.json";
+    // let mut app = App::load_state(file_path)?;
+    let  app = App::new();
+    let file_path = "todo_state.json";
+    let mut file = File::open(file_path)?;
+    let mut contents = String::new();
+    file.read_to_string(&mut contents)?;
+    // app= serde_json::from_str(&contents)?;
+    // panic!("{:?}", app.titles);
 
-    let app = App::new();
+
     let tick_rate = Duration::from_millis(250);
     let res = run_app(&mut terminal, app,tick_rate);
 
