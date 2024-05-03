@@ -13,7 +13,9 @@ This is a  Todo application built using Rust and the tui-rs library, providing a
 
 1. Ensure you have Rust and Cargo installed on your system.
 2. Clone the repository:
-
+---
+![](demo.gif)
+---
 ```bash
    git clone git@github.com:Alish14/tui-todoapp.git 
 ```
