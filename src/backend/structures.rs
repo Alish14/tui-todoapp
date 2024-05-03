@@ -1,7 +1,7 @@
-use tui::{buffer, widgets::ListState}; 
+use tui::widgets::ListState; 
 use std::collections::HashMap;
 use serde::{Serialize, Deserialize};
-use std::{fs::{File, OpenOptions}, io::{Read, Write}};
+use std::{fs::File,io::Write};
 
 #[derive(PartialEq)]
 #[derive(Debug, Serialize, Deserialize)]
@@ -67,12 +67,6 @@ impl <T>StatefulListDone<T>{
         };
         self.state.select(Some(i));
     }
-    pub fn add_task(&mut self,task: T){
-        self.items_done_arr.push(task);
-    }
-    pub fn unselect(&mut self) {
-        self.state.select(Some(0));
-    }
     pub fn delete_task(&mut self){
         if self.items_done_arr.is_empty() {
             return;
@@ -108,7 +102,7 @@ impl<T> StatefulList<T> {
         };
         self.state.select(Some(i));
     }
-    pub fn task_done(&mut self,other: &mut StatefulListDone<T>)->Option<T>{
+    pub fn task_done(&mut self)->Option<T>{
         let selected_index = self.state.selected()?;
 
         if selected_index >= self.items.len() {
@@ -146,10 +140,6 @@ impl<T> StatefulList<T> {
             None => 0,
         };
         self.state.select(Some(i));
-    }
-
-    pub fn unselect(&mut self) {
-        self.state.select(None);
     }
     pub fn delete_task(&mut self){
         if self.items.is_empty() {
@@ -195,10 +185,7 @@ impl<'a> App<'a> {
         file.write_all(serialized.as_bytes())?;
         Ok(())
     }
-    // pub fn load_state(contents: &str) -> std::io::Result<App> {
-    //     let app = serde_json::from_str(contents)?;
-    //     Ok(app)
-    // }
+
     pub fn previous(&mut self){
     
         if self.index > 0 {

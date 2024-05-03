@@ -1,12 +1,8 @@
-use std::{ option, thread, time::{Duration, Instant}};
-use crossterm::{
-    event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode},
-    execute,
-    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
-};
-use std::{error::Error, io};
+use std::time::{Duration, Instant};
+use crossterm::event::{self, Event, KeyCode};
+use std::io;
 use tui::{
-    backend::{Backend, CrosstermBackend}, layout::{self, Alignment, Constraint, Direction, Layout}, style::{Color, Modifier, Style}, symbols::line, text::{Span, Spans, Text}, widgets::{Block, Borders, List, ListItem, Paragraph, Tabs,ListState}, Frame, Terminal
+    backend::Backend, Terminal
 };
 use super::ui;
 use super::structures::*;
@@ -16,7 +12,7 @@ pub fn run_app<B: Backend>(
     mut app: App,
     tick_rate: Duration,
 ) -> io::Result<()> {
-    let mut last_tick = Instant::now();
+    let last_tick = Instant::now();
     let mut is_done_list = false;
     loop {
         terminal.draw(|f| ui(f, &mut app))?;
@@ -82,7 +78,7 @@ pub fn run_app<B: Backend>(
                         KeyCode::Enter => {
                                 if let Some(selected_day_tasks) = app.days_tasks.get_mut(&app.titles[app.index]) {
                                     
-        if let Some(task) = selected_day_tasks.0.task_done(&mut selected_day_tasks.1) {
+        if let Some(task) = selected_day_tasks.0.task_done() {
             selected_day_tasks.1.items_done_arr.push(task);
         }
     

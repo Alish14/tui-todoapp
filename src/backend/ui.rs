@@ -1,17 +1,8 @@
-
-use std::{ option, thread, time::{Duration, Instant}};
-use crossterm::{
-    event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode},
-    execute,
-    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
-};
-use std::{error::Error, io};
 use tui::{
-    backend::{Backend, CrosstermBackend}, layout::{self, Alignment, Constraint, Direction, Layout}, style::{Color, Modifier, Style}, symbols::line, text::{Span, Spans, Text}, widgets::{Block, Borders, List, ListItem, Paragraph, Tabs,ListState}, Frame, Terminal
+    backend::Backend, layout::{self, Alignment, Constraint, Direction, Layout}, style::{Color, Modifier, Style}, text::{Span, Spans, Text}, widgets::{Block, Borders, List, ListItem, Paragraph, Tabs}, Frame
 };
 use super::structures::*;
 
-// use crate::structures::{App, InputMode};
 pub fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         let size = f.size();
         let chunks = Layout::default()
@@ -100,14 +91,14 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
         )
         .split(chunks_down[1]);
 
-let mut days_tasks_ref  = app.days_tasks.get_mut(&app.titles[app.index]).unwrap();
+let days_tasks_ref  = app.days_tasks.get_mut(&app.titles[app.index]).unwrap();
     
         let  item_done: Vec<ListItem> = days_tasks_ref
             .1
             .items_done_arr
             .iter()
             .map(|i| {
-                let mut lines: Vec<Spans<'_>> = vec![Spans::from(i.as_str())];
+                let  lines: Vec<Spans<'_>> = vec![Spans::from(i.as_str())];
                 
                 ListItem::new(lines).style(Style::default().fg(Color::Black))
             })
@@ -132,7 +123,7 @@ let mut days_tasks_ref  = app.days_tasks.get_mut(&app.titles[app.index]).unwrap(
             .items
             .iter()
             .map(|i| {
-                let mut lines: Vec<Spans<'_>> = vec![Spans::from(i.as_str())];
+                let lines: Vec<Spans<'_>> = vec![Spans::from(i.as_str())];
                 ListItem::new(lines).style(Style::default().fg(Color::Black))
             })
             .collect();
