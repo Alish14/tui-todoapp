@@ -155,16 +155,16 @@ impl<T> StatefulList<T> {
 impl<'a> App<'a> {
     pub fn new() -> App<'a> {
         let mut days_tasks = HashMap::new();
-        days_tasks.insert("day1",(StatefulList::with_items(vec![]),StatefulListDone::with_items(vec![])));
-        days_tasks.insert("day2",(StatefulList::with_items(vec![]),StatefulListDone::with_items(vec![])));
-        days_tasks.insert("day3",(StatefulList::with_items(vec![]),StatefulListDone::with_items(vec![])));
-        days_tasks.insert("day4",(StatefulList::with_items(vec![]),StatefulListDone::with_items(vec![])));
-        days_tasks.insert("day5",(StatefulList::with_items(vec![]),StatefulListDone::with_items(vec![])));
-        days_tasks.insert("day6",(StatefulList::with_items(vec![]),StatefulListDone::with_items(vec![])));
-        days_tasks.insert("day7",(StatefulList::with_items(vec![]),StatefulListDone::with_items(vec![])));
+        days_tasks.insert("Sat",(StatefulList::with_items(vec![]),StatefulListDone::with_items(vec![])));
+        days_tasks.insert("Sun",(StatefulList::with_items(vec![]),StatefulListDone::with_items(vec![])));
+        days_tasks.insert("Mon",(StatefulList::with_items(vec![]),StatefulListDone::with_items(vec![])));
+        days_tasks.insert("Tue",(StatefulList::with_items(vec![]),StatefulListDone::with_items(vec![])));
+        days_tasks.insert("Wed",(StatefulList::with_items(vec![]),StatefulListDone::with_items(vec![])));
+        days_tasks.insert("Thu",(StatefulList::with_items(vec![]),StatefulListDone::with_items(vec![])));
+        days_tasks.insert("Fri",(StatefulList::with_items(vec![]),StatefulListDone::with_items(vec![])));
         App {
             days_tasks,
-            titles: vec!["day1", "day2", "day3", "day4","day5","day6","day7"],
+            titles: vec!["Sat","Sun","Mon","Tue","Wed","Thu","Fri"],
             index: 0,
             messages: Vec::new(),
             input: String::new(),
