@@ -138,15 +138,11 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     }
     match app.input_mode {
         InputMode::Normal =>
-            // Hide the cursor. `Frame` does this by default, so we don't need to do anything here
             {}
 
         InputMode::Editing => {
-            // Make the cursor visible and ask tui-rs to put it at the specified coordinates after rendering
             f.set_cursor(
-                // Put cursor past the end of the input text
                 chunks[0].x + app.input.len() as u16 + 1,
-                // Move one line down, from the border to the input line
                 chunks[0].y + 1,
             )
         }
