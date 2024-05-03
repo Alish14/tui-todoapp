@@ -76,6 +76,9 @@ impl <T>StatefulListDone<T>{
         self.items_done_arr.remove(selected_index);
         self.state.select(None); // Unselect the item
     }
+   pub fn select(&mut self){
+        self.state.select(None); // Unselect the item
+    }
 }
 
 impl<T> StatefulList<T> {
@@ -101,6 +104,10 @@ impl<T> StatefulList<T> {
             None => 0,
         };
         self.state.select(Some(i));
+
+    }
+    pub fn select(&mut self){
+        self.state.select(None); // Unselect the item
     }
     pub fn task_done(&mut self)->Option<T>{
         let selected_index = self.state.selected()?;

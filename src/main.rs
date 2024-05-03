@@ -4,13 +4,13 @@ use crossterm::{
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
+mod backend;
 use crate::backend::*;
 use std::io;
 use tui::{
     backend::CrosstermBackend, Terminal
 };
 use std::{fs::File, io::Read};
-mod backend;
 fn main() -> Result<(), io::Error> {
     enable_raw_mode()?;
     let mut stdout = io::stdout();
@@ -21,7 +21,10 @@ fn main() -> Result<(), io::Error> {
     let mut file = File::open(file_path)?;
     let mut contents = String::new();
     file.read_to_string(&mut contents)?;
-    let app= serde_json::from_str(&contents)?;
+    let mut app:App= serde_json::from_str(&contents)?;
+    for i in 0..7 {
+        app.days_tasks.get_mut(&app.titles[i]).unwrap().0.items.retain(|item| !item.is_empty());
+    }
 
 
     let tick_rate = Duration::from_millis(250);

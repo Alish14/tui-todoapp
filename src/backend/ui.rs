@@ -32,7 +32,7 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
             let (first, rest) = t.split_at(1);
             Spans::from(vec![
                 Span::styled(first, Style::default().fg(Color::LightYellow)),
-                Span::styled(rest, Style::default().fg(Color::LightGreen)),
+                Span::styled(rest, Style::default().fg(Color::LightMagenta)),
             ])
         })
         .collect();
@@ -135,6 +135,21 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
 
     if InputMode::Editing == app.input_mode {
         f.render_widget(input, chunks[0]);
+    }
+    match app.input_mode {
+        InputMode::Normal =>
+            // Hide the cursor. `Frame` does this by default, so we don't need to do anything here
+            {}
+
+        InputMode::Editing => {
+            // Make the cursor visible and ask tui-rs to put it at the specified coordinates after rendering
+            f.set_cursor(
+                // Put cursor past the end of the input text
+                chunks[0].x + app.input.len() as u16 + 1,
+                // Move one line down, from the border to the input line
+                chunks[0].y + 1,
+            )
+        }
     }
 
     let items = List::new(items)

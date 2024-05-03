@@ -61,17 +61,17 @@ pub fn run_app<B: Backend>(
                         KeyCode::Char('s') => 
                         {  
                             if is_done_list {
-                                app.days_tasks.get_mut(&app.titles[app.index]).unwrap().1.previous();
+                                app.days_tasks.get_mut(&app.titles[app.index]).unwrap().1.select();
 
                         } else {
-                            app.days_tasks.get_mut(&app.titles[app.index]).unwrap().0.previous();
+                            app.days_tasks.get_mut(&app.titles[app.index]).unwrap().0.select();
                         }
                     },
                         KeyCode::Tab=> {
                             if is_done_list {
-                                app.days_tasks.get_mut(&app.titles[app.index]).unwrap().1.previous();
+                                app.days_tasks.get_mut(&app.titles[app.index]).unwrap().1.select();
                             } else {
-                                app.days_tasks.get_mut(&app.titles[app.index]).unwrap().0.previous();
+                                app.days_tasks.get_mut(&app.titles[app.index]).unwrap().0.select();
                             }
                             is_done_list = !is_done_list;
                         },
