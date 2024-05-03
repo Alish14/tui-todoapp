@@ -25,13 +25,13 @@ then:
    cargo run
 ```
 
-##Usage
+## Usage
 - **Save State**: Press S to save the current state of tasks.
 - **Navigation**: Use the arrow keys to navigate between tasks and lists.
 - **Quit**: Press q to exit the application.
 - **Reset** : Press R to reset the application.
 
-##Contributing
+## Contributing
 
 Contributions are welcome! If you have suggestions, bug reports, or feature requests, please open an issue or submit a pull request.
 
